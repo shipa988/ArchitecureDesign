@@ -56,5 +56,5 @@ erDiagram
     HOTEL ||--o| ROOM : contains
     RESERVATION ||--o| ROOM : have
 
-    ROOM ||--o| NEW_RESERVATION_SYSTEM : transmit_data
+    ROOM ||--o| NEW_RESERVATION_SYSTEM : transmit_temperature_humidity_need_for_cleaning_data
 ```
