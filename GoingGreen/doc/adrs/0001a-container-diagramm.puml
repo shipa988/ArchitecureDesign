@@ -1,0 +1,77 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+skinparam wrapWidth 300
+LAYOUT_WITH_LEGEND()
+LAYOUT_LANDSCAPE()
+
+title
+  <b>RecyclingSystem v2024.01.16</b>
+  <i>Система утилизации</i>
+ end title
+
+ Person(CLIENT, "Клиент")
+  System_Ext(DELIVERY_POINT, "DELIVERY_POINT")
+ System_Ext(BANK_PROVIDER, "BANK_PROVIDER")
+ 
+ System_Boundary(recycling_system, "Система утилизации") {
+ System(SERVICE_CENTER, "SERVICE_CENTER")
+ Container(DELIVERY_SERVICE, "DELIVERY_SERVICE", "go", "интеграция с внешними сервисами доставки")
+ Container(NOTIFICATION_SERVICE, "NOTIFICATION_SERVICE", "go", "система пуш смс email уведомлений")
+ Container(PAYMENT_SERVICE, "PAYMENT_SERVICE", "go", "система оплаты и интеграции с платежками")
+ 
+ 
+  System_Boundary(auth_system, "Система аутентификации") {
+  Container(API_GATEWAY, "API_GATEWAY", "krakenD", "Aутентификация/сессии и API Gateway")
+  ContainerDb(db, "Database", "Redis", "хранит данные по аутенификации/сессии", $sprite="Redis")
+ }
+ 
+ System_Boundary(equipment_accounting_system, "Система учета оборудования") {
+  Container(CATALOG_SERVICE, "CATALOG_SERVICE", "go", "каталог сдаваемого на переработку оборрудования")
+  ContainerDb(auth_db, "Database", "Mysql", "хранит актуальные и уже нет типы сдаваемого оборудования", $sprite="Mysql")
+ 
+  Rel(CLIENT, CATALOG_SERVICE, "Запрос списка товаров")
+ }
+ 
+ System_Boundary(order_system, "Система учета заказов") {
+  Container(ORDER_SERVICE_READ, "ORDER_SERVICE_READ", "go", "данные по заказам")
+  Container(ORDER_SERVICE_WRITE, "ORDER_SERVICE_WRITE", "go", "управление заказами")
+
+  ContainerDb(order_db, "Database", "Mysql", "хранит статусы и данные по каждому заказу", $sprite="Mysql")
+  
+  Rel(CLIENT, ORDER_SERVICE_READ, "Запрос информации о заказах")
+  Rel(CLIENT, ORDER_SERVICE_WRITE, "Создание/изменение заказа")
+ }
+  
+ System_Boundary(user_system, "Система учета пользователей") {
+  Container(USER_SERVICE, "USER_SERVICE", "go", "данные о клиентах и работниках")
+  ContainerDb(user_db, "Database", "Mysql", "бд пользователей", $sprite="Mysql")
+  
+  Rel(CLIENT, USER_SERVICE, "Запрос информации о пользователе")
+  Rel(API_GATEWAY, USER_SERVICE, "Запрос информации о пользователе")
+ }
+   
+ System_Boundary(assessment_system, "Система описания оборудования") {
+ Container(ASSESSMENT_SERVICE, "ASSESSMENT_SERVICE", "go", "сервис по оценке товаров")
+  ContainerDb(equipment_db, "Database", "Mysql", "хранит описания и систему оценки", $sprite="Mysql")
+  
+  Rel(CLIENT, ASSESSMENT_SERVICE, "Запрос информации о товаре")
+ }
+ }
+ 
+
+ 
+ 
+   Rel(CLIENT, API_GATEWAY, "Aвторизуется")
+   Rel(CLIENT, DELIVERY_SERVICE, "Запрос точки отправки")
+   Rel(ORDER_SERVICE_WRITE, PAYMENT_SERVICE, "Выплата по завершенному заказу")
+   Rel(BANK_PROVIDER, CLIENT, "Перечисление средств")
+   Rel(PAYMENT_SERVICE, BANK_PROVIDER, "Запрос средств")
+   Rel(SERVICE_CENTER, ORDER_SERVICE_WRITE, "Изменение заказа")
+   Rel(SERVICE_CENTER, ASSESSMENT_SERVICE, "Запрос данных для оценки")
+   Rel(SERVICE_CENTER, CATALOG_SERVICE, "Изменение списка товаров")
+   BiRel(DELIVERY_POINT, DELIVERY_SERVICE, "Интеграция")
+   Rel(ORDER_SERVICE_WRITE, NOTIFICATION_SERVICE, "Оповещение клиентов/работников")
+
+
+ @enduml
